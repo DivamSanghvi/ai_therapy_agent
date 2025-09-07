@@ -35,8 +35,6 @@ const clientSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-clientSchema.index({ phone: 1 });
-
 clientSchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();
