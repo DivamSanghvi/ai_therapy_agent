@@ -1,7 +1,7 @@
 import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
-
+import therapyRoutes from "./routes/therapyRoutes.js"
 const app = express()
 
 app.use(cors({
@@ -16,7 +16,7 @@ app.use(cookieParser())
 
 
 //routes declaration
-
+app.use("/", therapyRoutes);
 
 // http://localhost:8000/api/v1/users/register
 
