@@ -11,6 +11,10 @@ import {
 
 export const createClientController = async (req, res) => {
   try {
+    const { name, phone } = req.body;
+    if (!name || !phone) {
+      return res.status(400).json({ error: 'Name and phone are required' });
+    }
     const data = req.body;
     const client = await createClient(data);
     res.status(201).json(client);

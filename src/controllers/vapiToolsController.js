@@ -19,6 +19,10 @@ export const checkTherapistAvailabilityController = async (req, res) => {
 
 export const bookAppointmentToolController = async (req, res) => {
   try {
+    const { clientPhone, therapistId, appointmentDate, startTime, endTime, duration, amount } = req.body;
+    if (!clientPhone || !therapistId || !appointmentDate || !startTime || !endTime || !duration || !amount) {
+      return res.status(400).json({ error: 'clientPhone, therapistId, appointmentDate, startTime, endTime, duration, and amount are required' });
+    }
     const data = req.body;
     const result = await bookAppointmentTool(data);
     res.json(result);

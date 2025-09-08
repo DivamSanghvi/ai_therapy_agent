@@ -12,6 +12,10 @@ import {
 
 export const createTherapistController = async (req, res) => {
   try {
+    const { name, email, phone, specializations, hourlyRate } = req.body;
+    if (!name || !email || !phone || !specializations || !hourlyRate) {
+      return res.status(400).json({ error: 'Name, email, phone, specializations, and hourlyRate are required' });
+    }
     const data = req.body;
     const therapist = await createTherapist(data);
     res.status(201).json(therapist);

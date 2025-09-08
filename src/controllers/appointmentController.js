@@ -13,6 +13,10 @@ import {
 
 export const createAppointmentController = async (req, res) => {
   try {
+    const { therapist, client, appointmentDate, startTime, endTime, duration, amount } = req.body;
+    if (!therapist || !client || !appointmentDate || !startTime || !endTime || !duration || !amount) {
+      return res.status(400).json({ error: 'Therapist, client, appointmentDate, startTime, endTime, duration, and amount are required' });
+    }
     const data = req.body;
     const appointment = await createAppointment(data);
     res.status(201).json(appointment);

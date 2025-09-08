@@ -1,6 +1,6 @@
 import { getAvailableTherapists } from './therapistService.js';
 import { createAppointment } from './appointmentService.js';
-import { getClientByPhone } from './clientService.js';
+import { getClientByPhone, createClient } from './clientService.js';
 import { cancelAppointment } from './appointmentService.js';
 import { getAppointmentById } from './appointmentService.js';
 
@@ -10,7 +10,28 @@ export const checkTherapistAvailability = async (date, startTime, endTime, speci
 };
 
 export const bookAppointmentTool = async (data) => {
-  const appointment = await createAppointment(data);
+  const { clientName,clientPhone, therapistId, appointmentDate, startTime, endTime, duration, amount, currency, sessionType, bookingSource } = data;
+
+  // Check if client exists, if not create
+  let client = await getClientByPhone(clientPhone);
+  if (!client) {
+    client = await createClient({ name: clientName, phone: clientPhone });
+  }
+
+  const appointmentData = {
+    therapist: therapistId,
+    client: client._id,
+    appointmentDate,
+    startTime,
+    endTime,
+    duration,
+    amount,
+    currency: currency || 'INR',
+    sessionType: sessionType || 'follow_up',
+    bookingSource: bookingSource || 'voice_call'
+  };
+
+  const appointment = await createAppointment(appointmentData);
   return { success: true, appointmentId: appointment._id, message: 'Appointment booked successfully' };
 };
 
