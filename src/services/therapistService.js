@@ -24,10 +24,18 @@ export const deleteTherapist = async (id) => {
 };
 
 export const getAvailableTherapists = async (date, startTime, endTime, specialization) => {
+  console.log('=== getAvailableTherapists START ===');
+  console.log('Input params:', { date, startTime, endTime, specialization });
+
   let query = { isActive: true };
   if (specialization) query.specializations = specialization;
+  console.log('Query to execute:', query);
+
   const therapists = await Therapist.find(query);
+  console.log('Therapists found:', therapists.length);
+
   // TODO: Implement availability check logic
+  console.log('getAvailableTherapists result:', therapists);
   return therapists;
 };
 

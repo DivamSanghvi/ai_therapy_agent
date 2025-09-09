@@ -42,6 +42,9 @@ export const getUpcomingAppointments = async () => {
 };
 
 export const checkAvailabilitySlot = async (therapistId, date, startTime, endTime) => {
+  console.log('=== checkAvailabilitySlot START ===');
+  console.log('Input params:', { therapistId, date, startTime, endTime });
+
   const existing = await Appointment.findOne({
     therapist: therapistId,
     appointmentDate: date,
@@ -51,35 +54,89 @@ export const checkAvailabilitySlot = async (therapistId, date, startTime, endTim
     ],
     status: { $nin: ['cancelled', 'completed'] }
   });
-  if (existing) return false;
+  console.log('Existing appointment check result:', existing);
+
+  if (existing) {
+    console.log('Slot not available - existing appointment found');
+    return false;
+  }
 
   const availability = await Availability.findOne({ therapist: therapistId, date });
-  if (availability && availability.type === 'unavailable') return false;
+  console.log('Availability check result:', availability);
+
+  if (availability && availability.type === 'unavailable') {
+    console.log('Slot not available - therapist unavailable');
+    return false;
+  }
 
   const therapist = await Therapist.findById(therapistId);
-  const day = new Date(date).toLocaleLowerCase('en-US', { weekday: 'long' });
+  console.log('Therapist lookup result:', therapist);
+
+  if (!therapist) {
+    console.log('Therapist not found');
+    return false;
+  }
+
+  console.log('Date input:', date);
+  console.log('Date object:', new Date(date));
+
+  // Fix the bug: toLocaleLowerCase is not a method of Date object
+  const day = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  console.log('Calculated day:', day);
+
   const daySchedule = therapist.weeklySchedule[day];
-  if (!daySchedule.available) return false;
+  console.log('Day schedule:', daySchedule);
+
+  if (!daySchedule || !daySchedule.available) {
+    console.log('Slot not available - day not available or no schedule');
+    return false;
+  }
 
   const slotFits = daySchedule.slots.some(slot => slot.start <= startTime && slot.end >= endTime);
+  console.log('Slot fits result:', slotFits);
+
   return slotFits;
 };
 
 export const getAvailableSlots = async (therapistId, date) => {
+  console.log('=== getAvailableSlots START ===');
+  console.log('Input params:', { therapistId, date });
+
   const therapist = await Therapist.findById(therapistId);
-  const day = new Date(date).toLocaleLowerCase('en-US', { weekday: 'long' });
+  console.log('Therapist lookup result:', therapist);
+
+  if (!therapist) {
+    console.log('Therapist not found');
+    return [];
+  }
+
+  // Fix the same bug here
+  const day = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  console.log('Calculated day:', day);
+
   const daySchedule = therapist.weeklySchedule[day];
-  if (!daySchedule.available) return [];
+  console.log('Day schedule:', daySchedule);
+
+  if (!daySchedule || !daySchedule.available) {
+    console.log('No available schedule for this day');
+    return [];
+  }
 
   const appointments = await Appointment.find({
     therapist: therapistId,
     appointmentDate: date,
     status: { $nin: ['cancelled', 'completed'] }
   });
+  console.log('Existing appointments:', appointments);
 
-  return daySchedule.slots.filter(slot => {
-    return !appointments.some(app =>
+  const availableSlots = daySchedule.slots.filter(slot => {
+    const isAvailable = !appointments.some(app =>
       (app.startTime < slot.end && app.endTime > slot.start)
     );
+    console.log(`Slot ${slot.start}-${slot.end} available:`, isAvailable);
+    return isAvailable;
   });
+
+  console.log('Final available slots:', availableSlots);
+  return availableSlots;
 };

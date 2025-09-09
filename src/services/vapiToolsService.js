@@ -10,12 +10,21 @@ export const checkTherapistAvailability = async (date, startTime, endTime, speci
 };
 
 export const bookAppointmentTool = async (data) => {
-  const { clientName,clientPhone, therapistId, appointmentDate, startTime, endTime, duration, amount, currency, sessionType, bookingSource } = data;
+  console.log('=== bookAppointmentTool START ===');
+  console.log('Input data:', JSON.stringify(data, null, 2));
+
+  const { clientName, clientPhone, therapistId, appointmentDate, startTime, endTime, duration, amount, currency, sessionType, bookingSource } = data;
+  console.log('Extracted fields:', { clientName, clientPhone, therapistId, appointmentDate, startTime, endTime, duration, amount, currency, sessionType, bookingSource });
 
   // Check if client exists, if not create
+  console.log('Checking if client exists with phone:', clientPhone);
   let client = await getClientByPhone(clientPhone);
+  console.log('Client lookup result:', client);
+
   if (!client) {
+    console.log('Client not found, creating new client with:', { name: clientName, phone: clientPhone });
     client = await createClient({ name: clientName, phone: clientPhone });
+    console.log('New client created:', client);
   }
 
   const appointmentData = {
@@ -31,8 +40,16 @@ export const bookAppointmentTool = async (data) => {
     bookingSource: bookingSource || 'voice_call'
   };
 
+  console.log('Appointment data to create:', JSON.stringify(appointmentData, null, 2));
+  console.log('Calling createAppointment...');
+
   const appointment = await createAppointment(appointmentData);
-  return { success: true, appointmentId: appointment._id, message: 'Appointment booked successfully' };
+  console.log('createAppointment result:', appointment);
+
+  const result = { success: true, appointmentId: appointment._id, message: 'Appointment booked successfully' };
+  console.log('bookAppointmentTool final result:', result);
+
+  return result;
 };
 
 export const getClientInfoTool = async (phone) => {

@@ -2,12 +2,26 @@ import Client from '../models/client.js';
 import Appointment from '../models/appointment.js';
 
 export const createClient = async (data) => {
+  console.log('=== createClient START ===');
+  console.log('Input data:', JSON.stringify(data, null, 2));
+
   const client = new Client(data);
-  return await client.save();
+  console.log('Client object created:', client);
+
+  const savedClient = await client.save();
+  console.log('Client saved to database:', savedClient);
+
+  return savedClient;
 };
 
 export const getClientByPhone = async (phone) => {
-  return await Client.findOne({ phone });
+  console.log('=== getClientByPhone START ===');
+  console.log('Input phone:', phone);
+
+  const client = await Client.findOne({ phone });
+  console.log('Client lookup result:', client);
+
+  return client;
 };
 
 export const getClientById = async (id) => {
