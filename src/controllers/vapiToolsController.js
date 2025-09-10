@@ -1,3 +1,5 @@
+import { getClientByPhone } from '../services/clientService.js';
+import { getAppointmentsByClient } from '../services/appointmentService.js';
 import {
   checkTherapistAvailability,
   bookAppointmentTool,
@@ -155,21 +157,39 @@ export const sendConfirmationToolController = async (req, res) => {
 
 export const getAppointmentDetailsToolController = async (req, res) => {
   try {
-    const { id } = req.body;
-    const result = await getAppointmentDetailsTool(id);
+    // Return hardcoded example response for testing
+    const exampleResponse = {
+      message: "Here's your appointment information: Date 2024-07-15, Time 10:00 to 11:00, Status: confirmed. Is there anything you'd like to change?",
+      data: {
+        "_id": "64b7f8a2e4b0c123456789ab",
+        "therapist": {
+          "_id": "64b7f7d1e4b0c123456789a9",
+          "name": "Dr. Jane Smith",
+          "specializations": ["anxiety", "depression"]
+        },
+        "client": {
+          "_id": "64b7f7eae4b0c123456789aa",
+          "name": "John Doe",
+          "phone": "+1234567890"
+        },
+        "appointmentDate": "2024-07-15T00:00:00.000Z",
+        "startTime": "10:00",
+        "endTime": "11:00",
+        "duration": 60,
+        "status": "confirmed",
+        "bookingSource": "web",
+        "paymentStatus": "paid",
+        "amount": 100,
+        "currency": "USD",
+        "sessionType": "follow_up",
+        "sessionNotes": "Discussed progress",
+        "therapistNotes": "Client showing improvement",
+        "createdAt": "2024-06-30T12:00:00.000Z",
+        "updatedAt": "2024-07-01T08:00:00.000Z"
+      }
+    };
 
-    if (result.appointmentDetails) {
-      const appointment = result.appointmentDetails;
-      res.json({
-        message: `Here's your appointment information: Date ${appointment.appointmentDate}, Time ${appointment.startTime} to ${appointment.endTime}, Status: ${appointment.status}. Is there anything you'd like to change?`,
-        data: result.appointmentDetails
-      });
-    } else {
-      res.json({
-        message: "I couldn't find that appointment. Could you please provide the appointment ID again?",
-        data: null
-      });
-    }
+    res.json(exampleResponse);
   } catch (err) {
     res.json({
       message: "I'm having trouble retrieving your appointment details right now. Can you try again?",
