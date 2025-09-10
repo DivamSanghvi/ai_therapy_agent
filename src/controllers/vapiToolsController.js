@@ -109,18 +109,75 @@ export const getClientInfoToolController = async (req, res) => {
 
 export const cancelAppointmentToolController = async (req, res) => {
   try {
-    const { id, reason, cancelledBy } = req.body;
-    const result = await cancelAppointmentTool(id, reason, cancelledBy);
+    const { id, phone, reason, cancelledBy } = req.body;
 
-    if (result.success) {
-      res.json({
-        message: "I've successfully cancelled your appointment. If you'd like to reschedule, I can help you find another time that works for you.",
-        data: result
+    if (id) {
+      // Cancel by appointment ID
+      const result = await cancelAppointmentTool(id, reason, cancelledBy);
+
+      if (result.success) {
+        res.json({
+          message: "I've successfully cancelled your appointment. If you'd like to reschedule, I can help you find another time that works for you.",
+          data: result
+        });
+      } else {
+        res.json({
+          message: "I'm sorry, I couldn't cancel the appointment. Please try again or contact support.",
+          data: result
+        });
+      }
+    } else if (phone) {
+      // Cancel by phone number - find client and their upcoming appointments
+      const client = await getClientByPhone(phone);
+      if (!client) {
+        return res.json({
+          message: "I couldn't find any client with that phone number. Would you like to create a new profile?",
+          data: null
+        });
+      }
+
+      // Get all upcoming appointments for this client
+      const appointments = await getAppointmentsByClient(client._id);
+      const upcomingAppointments = appointments.filter(app =>
+        app.status === 'confirmed' || app.status === 'pending'
+      );
+
+      if (!upcomingAppointments || upcomingAppointments.length === 0) {
+        return res.json({
+          message: "You don't have any upcoming appointments to cancel.",
+          data: []
+        });
+      }
+
+      // If multiple appointments, cancel the next upcoming one
+      // Sort by date and time to get the soonest appointment
+      const sortedAppointments = upcomingAppointments.sort((a, b) => {
+        const dateA = new Date(`${a.appointmentDate.split('T')[0]}T${a.startTime}`);
+        const dateB = new Date(`${b.appointmentDate.split('T')[0]}T${b.startTime}`);
+        return dateA - dateB;
       });
+
+      const appointmentToCancel = sortedAppointments[0];
+      const result = await cancelAppointmentTool(appointmentToCancel._id, reason || 'Cancelled by client via phone', cancelledBy || 'client');
+
+      if (result.success) {
+        res.json({
+          message: `I've successfully cancelled your upcoming appointment for ${appointmentToCancel.appointmentDate} at ${appointmentToCancel.startTime}. If you'd like to reschedule, I can help you find another time that works for you.`,
+          data: {
+            cancelledAppointment: appointmentToCancel,
+            ...result
+          }
+        });
+      } else {
+        res.json({
+          message: "I'm sorry, I couldn't cancel the appointment. Please try again or contact support.",
+          data: result
+        });
+      }
     } else {
       res.json({
-        message: "I'm sorry, I couldn't cancel the appointment. Please try again or contact support.",
-        data: result
+        message: "Please provide either an appointment ID or your phone number to cancel an appointment.",
+        data: null
       });
     }
   } catch (err) {
@@ -157,39 +214,53 @@ export const sendConfirmationToolController = async (req, res) => {
 
 export const getAppointmentDetailsToolController = async (req, res) => {
   try {
-    // Return hardcoded example response for testing
-    const exampleResponse = {
-      message: "Here's your appointment information: Date 2024-07-15, Time 10:00 to 11:00, Status: confirmed. Is there anything you'd like to change?",
-      data: {
-        "_id": "64b7f8a2e4b0c123456789ab",
-        "therapist": {
-          "_id": "64b7f7d1e4b0c123456789a9",
-          "name": "Dr. Jane Smith",
-          "specializations": ["anxiety", "depression"]
-        },
-        "client": {
-          "_id": "64b7f7eae4b0c123456789aa",
-          "name": "John Doe",
-          "phone": "+1234567890"
-        },
-        "appointmentDate": "2024-07-15T00:00:00.000Z",
-        "startTime": "10:00",
-        "endTime": "11:00",
-        "duration": 60,
-        "status": "confirmed",
-        "bookingSource": "web",
-        "paymentStatus": "paid",
-        "amount": 100,
-        "currency": "USD",
-        "sessionType": "follow_up",
-        "sessionNotes": "Discussed progress",
-        "therapistNotes": "Client showing improvement",
-        "createdAt": "2024-06-30T12:00:00.000Z",
-        "updatedAt": "2024-07-01T08:00:00.000Z"
-      }
-    };
+    const { id, phone } = req.body;
 
-    res.json(exampleResponse);
+    if (id) {
+      const result = await getAppointmentDetailsTool(id);
+
+      if (result.appointmentDetails) {
+        const appointment = result.appointmentDetails;
+        res.json({
+          message: `Here's your appointment information: Date ${appointment.appointmentDate}, Time ${appointment.startTime} to ${appointment.endTime}, Status: ${appointment.status}. Is there anything you'd like to change?`,
+          data: result.appointmentDetails
+        });
+      } else {
+        res.json({
+          message: "I couldn't find that appointment. Could you please provide the appointment ID again?",
+          data: null
+        });
+      }
+    } else if (phone) {
+      // Retrieve all appointments for client by phone number
+      const client = await getClientByPhone(phone);
+      if (!client) {
+        return res.json({
+          message: "I couldn't find any client with that phone number. Would you like to create a new profile?",
+          data: null
+        });
+      }
+      const appointments = await getAppointmentsByClient(client._id);
+      if (!appointments || appointments.length === 0) {
+        return res.json({
+          message: "You have no scheduled appointments.",
+          data: []
+        });
+      }
+      // Format appointment summaries
+      const summaries = appointments.map(app => {
+        return `Appointment on ${app.appointmentDate} from ${app.startTime} to ${app.endTime}, status: ${app.status}`;
+      }).join('; ');
+      res.json({
+        message: `Here are your scheduled appointments: ${summaries}.`,
+        data: appointments
+      });
+    } else {
+      res.json({
+        message: "Please provide either an appointment ID or your phone number to retrieve appointment details.",
+        data: null
+      });
+    }
   } catch (err) {
     res.json({
       message: "I'm having trouble retrieving your appointment details right now. Can you try again?",
