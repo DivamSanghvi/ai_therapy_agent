@@ -108,28 +108,45 @@ export const getClientInfoToolController = async (req, res) => {
 };
 
 export const cancelAppointmentToolController = async (req, res) => {
+  console.log('=== cancelAppointmentToolController START ===');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+
   try {
     const { id, phone, reason, cancelledBy } = req.body;
+    console.log('Extracted fields:', { id, phone, reason, cancelledBy });
 
     if (id) {
+      console.log('=== Cancel by appointment ID ===');
+      console.log('Calling cancelAppointmentTool with id:', id, 'reason:', reason, 'cancelledBy:', cancelledBy);
+
       // Cancel by appointment ID
       const result = await cancelAppointmentTool(id, reason, cancelledBy);
+      console.log('cancelAppointmentTool result:', JSON.stringify(result, null, 2));
 
       if (result.success) {
+        console.log('Cancellation successful, sending success response');
         res.json({
           message: "I've successfully cancelled your appointment. If you'd like to reschedule, I can help you find another time that works for you.",
           data: result
         });
       } else {
+        console.log('Cancellation failed, sending failure response');
         res.json({
           message: "I'm sorry, I couldn't cancel the appointment. Please try again or contact support.",
           data: result
         });
       }
     } else if (phone) {
+      console.log('=== Cancel by phone number ===');
+      console.log('Phone provided:', phone);
+
       // Cancel by phone number - find client and their upcoming appointments
+      console.log('Calling getClientByPhone with phone:', phone);
       const client = await getClientByPhone(phone);
+      console.log('getClientByPhone result:', client ? 'Client found' : 'Client not found');
+
       if (!client) {
+        console.log('No client found, returning error response');
         return res.json({
           message: "I couldn't find any client with that phone number. Would you like to create a new profile?",
           data: null
@@ -137,12 +154,17 @@ export const cancelAppointmentToolController = async (req, res) => {
       }
 
       // Get all upcoming appointments for this client
+      console.log('Calling getAppointmentsByClient with client._id:', client._id);
       const appointments = await getAppointmentsByClient(client._id);
+      console.log('getAppointmentsByClient result: Found', appointments ? appointments.length : 0, 'appointments');
+
       const upcomingAppointments = appointments.filter(app =>
         app.status === 'confirmed' || app.status === 'pending'
       );
+      console.log('Upcoming appointments after filtering:', upcomingAppointments.length);
 
       if (!upcomingAppointments || upcomingAppointments.length === 0) {
+        console.log('No upcoming appointments, returning response');
         return res.json({
           message: "You don't have any upcoming appointments to cancel.",
           data: []
@@ -151,6 +173,7 @@ export const cancelAppointmentToolController = async (req, res) => {
 
       // If multiple appointments, cancel the next upcoming one
       // Sort by date and time to get the soonest appointment
+      console.log('Sorting upcoming appointments by date/time');
       const sortedAppointments = upcomingAppointments.sort((a, b) => {
         const dateA = new Date(`${a.appointmentDate.split('T')[0]}T${a.startTime}`);
         const dateB = new Date(`${b.appointmentDate.split('T')[0]}T${b.startTime}`);
@@ -158,9 +181,17 @@ export const cancelAppointmentToolController = async (req, res) => {
       });
 
       const appointmentToCancel = sortedAppointments[0];
-      const result = await cancelAppointmentTool(appointmentToCancel._id, reason || 'Cancelled by client via phone', cancelledBy || 'client');
+      console.log('Appointment to cancel:', appointmentToCancel._id, 'on', appointmentToCancel.appointmentDate, 'at', appointmentToCancel.startTime);
+
+      const cancelReason = reason || 'Cancelled by client via phone';
+      const cancelBy = cancelledBy || 'client';
+      console.log('Calling cancelAppointmentTool with id:', appointmentToCancel._id, 'reason:', cancelReason, 'cancelledBy:', cancelBy);
+
+      const result = await cancelAppointmentTool(appointmentToCancel._id, cancelReason, cancelBy);
+      console.log('cancelAppointmentTool result:', JSON.stringify(result, null, 2));
 
       if (result.success) {
+        console.log('Cancellation successful, sending success response');
         res.json({
           message: `I've successfully cancelled your upcoming appointment for ${appointmentToCancel.appointmentDate} at ${appointmentToCancel.startTime}. If you'd like to reschedule, I can help you find another time that works for you.`,
           data: {
@@ -169,18 +200,26 @@ export const cancelAppointmentToolController = async (req, res) => {
           }
         });
       } else {
+        console.log('Cancellation failed, sending failure response');
         res.json({
           message: "I'm sorry, I couldn't cancel the appointment. Please try again or contact support.",
           data: result
         });
       }
     } else {
+      console.log('=== No id or phone provided ===');
       res.json({
         message: "Please provide either an appointment ID or your phone number to cancel an appointment.",
         data: null
       });
     }
   } catch (err) {
+    console.error('=== cancelAppointmentToolController ERROR ===');
+    console.error('Error type:', typeof err);
+    console.error('Error message:', err.message);
+    console.error('Error stack:', err.stack);
+    console.error('Error details:', err);
+
     res.json({
       message: "I encountered an error while cancelling your appointment. Please try again.",
       error: err.message

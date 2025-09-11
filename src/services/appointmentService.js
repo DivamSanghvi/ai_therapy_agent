@@ -30,7 +30,7 @@ export const cancelAppointment = async (id, reason, cancelledBy) => {
 };
 
 export const getAppointmentsByClient = async (clientId) => {
-  return await Appointment.find({ client: clientId }).populate('therapist');
+  return await Appointment.find({ client: clientId, status: { $ne: 'cancelled' } }).populate('therapist');
 };
 
 export const getAppointmentsByTherapist = async (therapistId) => {
