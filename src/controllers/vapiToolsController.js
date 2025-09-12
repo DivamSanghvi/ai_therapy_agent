@@ -8,6 +8,7 @@ import {
   sendConfirmationTool,
   getAppointmentDetailsTool
 } from '../services/vapiToolsService.js';
+import twilio from 'twilio';
 
 export const checkTherapistAvailabilityController = async (req, res) => {
   try {
@@ -58,6 +59,27 @@ export const bookAppointmentToolController = async (req, res) => {
 
     if (result.success) {
       console.log('Booking successful, sending success response');
+
+      // Send SMS confirmation
+      try {
+        const accountSid = 'AC052558373736b7bd5a37ddc0f3d61d59';
+        const authToken = '55bec46aee6607e62ac6cb8d228349a7';
+        const twilioClient = twilio(accountSid, authToken);
+
+        const messageBody = `Your booking is confirmed! Date: ${appointmentDate}, Time: ${startTime} to ${endTime}, Duration: ${duration} minutes, Amount: ₹${amount}, Appointment ID: ${result.appointmentId}`;
+
+        await twilioClient.messages.create({
+          body: messageBody,
+          from: '+18457124133',
+          to: clientPhone
+        });
+
+        console.log('SMS confirmation sent successfully');
+      } catch (smsError) {
+        console.error('Error sending SMS confirmation:', smsError);
+        // Don't fail the booking if SMS fails
+      }
+
       res.json({
         message: `Great! I've successfully booked your appointment for ${appointmentDate} at ${startTime}. Your appointment ID is ${result.appointmentId}. You'll receive a confirmation shortly.`,
         data: result
