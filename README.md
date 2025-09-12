@@ -8,8 +8,9 @@ A modern backend API for managing therapy appointments with voice-based booking 
 - **Therapist Management**: Complete CRUD operations for therapist profiles and schedules
 - **Client Management**: Client profiles with preferences and therapy history
 - **Smart Scheduling**: Availability checking, conflict prevention, and automated slot management
-- **Appointment Lifecycle**: Book, reschedule, cancel, and track appointments
-- **Real-time Notifications**: SMS/email confirmations and reminders
+- **Appointment Lifecycle**: Book, reschedule, cancel, and track appointments (excludes cancelled appointments from queries)
+- **SMS Confirmations**: Automatic Twilio SMS confirmations sent after successful bookings
+- **Real-time Notifications**: SMS/email confirmations and reminders via Twilio integration
 - **Analytics Dashboard**: Booking statistics and therapist utilization metrics
 
 ## 🛠 Tech Stack
