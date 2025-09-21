@@ -71,7 +71,7 @@ export const bookAppointmentToolController = async (req, res) => {
         await twilioClient.messages.create({
           body: messageBody,
           from: '+18457124133',
-          to: clientPhone
+          to: `+91${clientPhone}`
         });
 
         console.log('SMS confirmation sent successfully');
